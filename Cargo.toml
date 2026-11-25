@@ -45,7 +45,7 @@ tokio = { version = "1", features = ["fs", "io-util", "macros", "rt-multi-thread
 tracing = { version = "0.1", optional = true }
 
 [dev-dependencies]
-cucumber = "0.21"
+cucumber = "0.23"
 futures = "0.3"
 jackdaw-wf = { version = "0.2.5", default-features = false, features = ["redb"] }
 serde_json = "1"
