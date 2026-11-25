@@ -34,7 +34,7 @@ full = ["fetch", "duckdb"]
 anyhow = { version = "1.0", optional = true }
 duckdb = { version = "=1.20000.2", features = ["vtab-arrow"], optional = true }
 gosh-dl = { version = "0.6.3", default-features = false, features = ["http"], optional = true }
-jackdaw-wf = { version = "0.2.5", default-features = false, features = ["redb"], optional = true }
+jackdaw-wf = { version = "0.3.0", default-features = false, features = ["redb"], optional = true }
 libc = { version = "0.2", optional = true }
 metrics = { version = "0.24", optional = true }
 regex = { version = "1", optional = true }
@@ -47,7 +47,7 @@ tracing = { version = "0.1", optional = true }
 [dev-dependencies]
 cucumber = "0.21"
 futures = "0.3"
-jackdaw-wf = { version = "0.2.5", default-features = false, features = ["redb"] }
+jackdaw-wf = { version = "0.3.0", default-features = false, features = ["redb"] }
 serde_json = "1"
 sha2 = "0.10"
 tempfile = "3"
