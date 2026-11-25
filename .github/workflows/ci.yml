@@ -76,7 +76,7 @@ jobs:
 
       - name: Cache prebuilt libduckdb v2.0.0
         id: duckdb-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/duckdb-libs/v2.0.0/linux-amd64
           key: libduckdb-v2.0.0-linux-amd64
