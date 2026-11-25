@@ -19,7 +19,7 @@ Add `jackdaw-workflow-library` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-jackdaw-wf = "0.2.5"
+jackdaw-wf = "0.3.0"
 jackdaw-workflow-library = { version = "0.1.0", features = ["fetch", "duckdb"] }
 ```
 
