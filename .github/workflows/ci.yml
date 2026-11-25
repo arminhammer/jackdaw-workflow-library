@@ -1,0 +1,176 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint:
+    name: Format & Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: lint
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run clippy (full features)
+        run: cargo clippy --all-targets --features full -- -D warnings
+
+  features:
+    name: Feature Matrix
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: features
+
+      - name: Clippy each feature independently
+        run: cargo hack clippy --each-feature --exclude-features duckdb-bundled --no-dev-deps -- -D warnings
+
+  test:
+    name: Test (Unit, Doc, BDD)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: test
+
+      - name: Cache prebuilt libduckdb v2.0.0
+        id: duckdb-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/duckdb-libs/v2.0.0/linux-amd64
+          key: libduckdb-v2.0.0-linux-amd64
+
+      - name: Fetch prebuilt libduckdb v2.0.0
+        if: steps.duckdb-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          VERSION=v2.0.0
+          PLAT=linux-amd64
+          SHA=993ad89e7dfca66cd6da994c2cad090c2fc160ddf9f550498a098ab4bb13cfb1
+          DIR="$HOME/.cache/duckdb-libs/$VERSION/$PLAT"
+          TMP=$(mktemp -d)
+          curl -fsSL -o "$TMP/lib.tar.gz" "https://install.duckdb.org/$VERSION/duckdb-shared-libs-$PLAT.tar.gz"
+          echo "$SHA  $TMP/lib.tar.gz" | sha256sum -c -
+          mkdir -p "$DIR"
+          tar xzf "$TMP/lib.tar.gz" -C "$DIR"
+          rm -rf "$TMP"
+
+      - name: Run tests (unit, doc, BDD)
+        env:
+          DUCKDB_LIB_DIR: ${{ runner.home }}/.cache/duckdb-libs/v2.0.0/linux-amd64
+          DUCKDB_INCLUDE_DIR: ${{ runner.home }}/.cache/duckdb-libs/v2.0.0/linux-amd64
+          LD_LIBRARY_PATH: ${{ runner.home }}/.cache/duckdb-libs/v2.0.0/linux-amd64
+        run: |
+          cargo test --features full --lib
+          cargo test --features full --doc
+          cargo test --features full --test bdd
+
+  test-bundled:
+    name: Test (Bundled DuckDB)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: bundled
+
+      - name: Run all-features tests (bundled DuckDB)
+        run: cargo test --all-features
+
+  docs:
+    name: Docs (docs.rs check)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: docs
+
+      - name: Build docs with all features
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo doc --all-features --no-deps
+
+      - name: Build docs with no default features
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo doc --no-default-features --no-deps
+
+  deny-and-publish:
+    name: Supply Chain & Publish Dry Run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@cargo-deny
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: deny
+
+      - name: Check licenses, bans, and sources
+        run: cargo deny --all-features check licenses bans sources
+
+      - name: Verify crates.io packaging
+        run: cargo publish --dry-run --allow-dirty
