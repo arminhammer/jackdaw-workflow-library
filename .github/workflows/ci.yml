@@ -97,11 +97,10 @@ jobs:
           rm -rf "$TMP"
 
       - name: Run tests (unit, doc, BDD)
-        env:
-          DUCKDB_LIB_DIR: ${{ runner.home }}/.cache/duckdb-libs/v2.0.0/linux-amd64
-          DUCKDB_INCLUDE_DIR: ${{ runner.home }}/.cache/duckdb-libs/v2.0.0/linux-amd64
-          LD_LIBRARY_PATH: ${{ runner.home }}/.cache/duckdb-libs/v2.0.0/linux-amd64
         run: |
+          export DUCKDB_LIB_DIR="$HOME/.cache/duckdb-libs/v2.0.0/linux-amd64"
+          export DUCKDB_INCLUDE_DIR="$HOME/.cache/duckdb-libs/v2.0.0/linux-amd64"
+          export LD_LIBRARY_PATH="$HOME/.cache/duckdb-libs/v2.0.0/linux-amd64:${LD_LIBRARY_PATH:-}"
           cargo test --features full --lib
           cargo test --features full --doc
           cargo test --features full --test bdd
