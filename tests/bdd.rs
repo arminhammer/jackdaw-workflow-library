@@ -29,6 +29,7 @@ fn enabled(var: &str) -> bool {
 
 fn skipped(tags: &[String]) -> bool {
     has_tag(tags, "todo")
+        || (has_tag(tags, "bundled") && !cfg!(feature = "duckdb-bundled"))
         || (has_tag(tags, "slow") && !enabled("JWL_SLOW"))
         || (has_tag(tags, "network") && !enabled("JWL_NETWORK"))
 }
